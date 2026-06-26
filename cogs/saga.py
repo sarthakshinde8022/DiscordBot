@@ -60,10 +60,8 @@ class Saga(commands.Cog):
     @commands.command(name="saga", aliases=["sagas"])
     async def saga(self, ctx, saga_num: int = None):
         """View or select a saga. Usage: jay!saga or jay!saga 1"""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         conn = db.get_conn()
         sagas = conn.execute("SELECT * FROM sagas ORDER BY id").fetchall()
@@ -122,10 +120,8 @@ class Saga(commands.Cog):
     @commands.command(name="mi", aliases=["mission"])
     async def mission(self, ctx, mission_num: int = None):
         """View or fight a mission. Usage: jay!mi or jay!mi 1"""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         saga_id = player["active_saga"]
         if not saga_id:
