@@ -89,10 +89,8 @@ class Tower(commands.Cog):
     @commands.command(name="tc", aliases=["tower", "towerchallenge"])
     async def tower(self, ctx, difficulty: int = None):
         """Tower Challenge. Usage: jay!tc or jay!tc <1-4>"""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         if difficulty is None:
             embed = discord.Embed(title="🏰 Gadkille Tower — Choose Difficulty", color=config.COLOR_MAIN)
@@ -299,10 +297,8 @@ class Tower(commands.Cog):
     @commands.command(name="keys", aliases=["bosskeys"])
     async def keys(self, ctx):
         """Check your Boss Keys."""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
         await ctx.send(
             f"🗝️ **{ctx.author.name}** has **{player['boss_keys']} Boss Key(s)**.\n"
             f"Use `jay!boss` to fight a boss (costs 1 key).\n"
