@@ -4,11 +4,15 @@ from datetime import datetime, timedelta
 import database as db
 import config
 
-def get_player(user_id):
+def get_player(user_id, username=None):
     conn = db.get_conn()
-    player = conn.execute("SELECT * FROM players WHERE user_id = ?", (str(user_id),)).fetchone()
+    c = conn.cursor()
+    c.execute("SELECT * FROM players WHERE user_id = ?", (str(user_id),))
+    player = c.fetchone()
     conn.close()
     return player
+
+# create_player replaced by db.ensure_user
 
 def level_from_xp(xp):
     return max(1, int((xp / 100) ** 0.5) + 1)
@@ -23,7 +27,6 @@ class General(commands.Cog):
         """Begin your Swarajya journey."""
         uid = str(ctx.author.id)
         already_existed = bool(get_player(uid))
-
         db.ensure_user(uid, ctx.author.name)
 
         if already_existed:
