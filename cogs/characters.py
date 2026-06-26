@@ -46,10 +46,8 @@ class Characters(commands.Cog):
     @commands.command(name="summon", aliases=["pull"])
     async def summon(self, ctx, banner: str = "1"):
         """Summon a warrior. Usage: !summon or !summon 2"""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(ctx.author.id)
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         b = config.BANNERS.get(banner, config.BANNERS["1"])
         cost = b["cost"]
@@ -99,10 +97,8 @@ class Characters(commands.Cog):
     @commands.command(name="multi")
     async def multi(self, ctx, banner: str = "1"):
         """Multi-summon 10 warriors. Usage: !multi or !multi 2"""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(ctx.author.id)
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         cost = config.MULTI_SUMMON_COST
         if player["hon"] < cost:
@@ -158,9 +154,11 @@ class Characters(commands.Cog):
     async def chars(self, ctx, member: discord.Member = None, page: int = 1):
         """View your warrior inventory. Usage: !chars [page]"""
         target = member or ctx.author
+        if not member:
+            db.ensure_user(str(target.id), target.name)
         player = get_player(str(target.id))
         if not player:
-            await ctx.send("❌ Use `jay!start` first!")
+            await ctx.send(f"❌ {target.name} hasn't started yet.")
             return
 
         conn = db.get_conn()
