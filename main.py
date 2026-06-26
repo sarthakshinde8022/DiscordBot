@@ -16,10 +16,7 @@ bot = commands.Bot(command_prefix="jay!", intents=intents, help_command=None)
 
 COGS = ["cogs.general", "cogs.characters", "cogs.battle", "cogs.saga", "cogs.tower", "cogs.items"]
 
-@bot.event
-async def on_ready():
-    print(f"✅ {bot.user} is online!")
-    @tasks.loop(minutes=5)
+@tasks.loop(minutes=5)
 async def update_presence():
     conn = db.get_conn()
     count = conn.execute("SELECT COUNT(*) FROM players").fetchone()[0]
@@ -27,6 +24,11 @@ async def update_presence():
     await bot.change_presence(
         activity=discord.Game(name=f"jay!help | {count} Sardars")
     )
+
+@bot.event
+async def on_ready():
+    print(f"✅ {bot.user} is online!")
+    update_presence.start()  # start the loop here
 
 @bot.command(name="help")
 async def help_cmd(ctx, section: str = None):
