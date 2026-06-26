@@ -13,7 +13,7 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="jay!", intents=intents, help_command=None)
 
-COGS = ["cogs.general", "cogs.characters", "cogs.battle", "cogs.saga", "cogs.tower"]
+COGS = ["cogs.general", "cogs.characters", "cogs.battle", "cogs.saga", "cogs.tower", "cogs.items"]
 
 @bot.event
 async def on_ready():
