@@ -156,16 +156,6 @@ def init_db():
     conn.close()
     print("✅ Database initialized.")
 
-def ensure_user(user_id, username):
-    """Auto-register a player if they don't exist yet. Call at the top of every command."""
-    conn = get_conn()
-    conn.execute(
-        "INSERT OR IGNORE INTO players (user_id, username) VALUES (?, ?)",
-        (str(user_id), username)
-    )
-    conn.commit()
-    conn.close()
-
 def seed_bosses(c):
     bosses = [
         ("Afzal Khan",    "Adilshahi General",    8000,  550, 250, 400, 150, "The treacherous general of Bijapur Sultanate.", "Dark"),
@@ -282,3 +272,159 @@ def seed_characters(c):
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         characters
     )
+
+def migrate_db():
+    """Add new tables for Phase 3b — Items, Equipment, Pets."""
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Items master table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS items (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT NOT NULL,
+            type        TEXT NOT NULL,
+            rarity      TEXT NOT NULL,
+            atk_bonus   INTEGER DEFAULT 0,
+            def_bonus   INTEGER DEFAULT 0,
+            hp_bonus    INTEGER DEFAULT 0,
+            description TEXT DEFAULT '',
+            cost_hon    INTEGER DEFAULT 0
+        )
+    """)
+
+    # Player item inventory
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS player_items (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id     TEXT NOT NULL,
+            item_id     INTEGER NOT NULL,
+            level       INTEGER DEFAULT 1,
+            is_equipped INTEGER DEFAULT 0,
+            equipped_to INTEGER DEFAULT NULL,
+            is_favorite INTEGER DEFAULT 0,
+            obtained_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY(item_id) REFERENCES items(id)
+        )
+    """)
+
+    # Pets/War Animals master table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS pets (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT NOT NULL,
+            type        TEXT NOT NULL,
+            rarity      TEXT NOT NULL,
+            atk_bonus   INTEGER DEFAULT 0,
+            def_bonus   INTEGER DEFAULT 0,
+            hp_bonus    INTEGER DEFAULT 0,
+            description TEXT DEFAULT '',
+            emoji       TEXT DEFAULT '🐾'
+        )
+    """)
+
+    # Player eggs
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS player_eggs (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id     TEXT NOT NULL,
+            egg_type    TEXT NOT NULL,
+            hatch_time  TEXT NOT NULL,
+            hatched     INTEGER DEFAULT 0,
+            obtained_at TEXT DEFAULT (datetime('now'))
+        )
+    """)
+
+    # Player pets
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS player_pets (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id     TEXT NOT NULL,
+            pet_id      INTEGER NOT NULL,
+            nickname    TEXT DEFAULT NULL,
+            is_active   INTEGER DEFAULT 0,
+            obtained_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY(pet_id) REFERENCES pets(id)
+        )
+    """)
+
+    # Add craft_coins to players if not exists
+    try:
+        c.execute("ALTER TABLE players ADD COLUMN craft_coins INTEGER DEFAULT 0")
+    except:
+        pass
+
+    # Seed items and pets
+    c.execute("SELECT COUNT(*) FROM items")
+    if c.fetchone()[0] == 0:
+        seed_items(c)
+
+    c.execute("SELECT COUNT(*) FROM pets")
+    if c.fetchone()[0] == 0:
+        seed_pets(c)
+
+    conn.commit()
+    conn.close()
+    print("✅ Phase 3b migration complete.")
+
+def seed_items(c):
+    items = [
+        # Weapons (type=weapon)
+        ("Bhavani Sword",     "weapon", "L", 120, 0,  0,   "The sacred sword of Chhatrapati Shivaji Maharaj.", 5000),
+        ("Peshwa's Talwar",   "weapon", "E", 85,  0,  0,   "The razor-sharp sword of Bajirao I.",              2500),
+        ("Sardar's Lance",    "weapon", "R", 55,  0,  0,   "A cavalry lance used by Maratha sardars.",         1000),
+        ("Mavla Katar",       "weapon", "C", 30,  0,  0,   "A simple but effective push dagger.",              300),
+
+        # Body Armor (type=armor)
+        ("Shivaji's Armour",  "armor",  "L", 0,  110, 200, "The legendary armour of Chhatrapati Shivaji.",    5000),
+        ("Peshwa Kavach",     "armor",  "E", 0,  75,  150, "The ceremonial armour of the Peshwa court.",      2500),
+        ("Maratha Chainmail", "armor",  "R", 0,  50,  100, "Standard chainmail worn by Maratha soldiers.",    1000),
+        ("Leather Vest",      "armor",  "C", 0,  25,  50,  "Basic leather protection for foot soldiers.",     300),
+
+        # Head Armor (type=helmet)
+        ("Royal Shirastra",   "helmet", "L", 0,  90,  150, "The royal helmet of Maratha royalty.",            4000),
+        ("Sardar's Turban",   "helmet", "E", 0,  60,  100, "A battle-hardened turban worn by sardars.",       2000),
+        ("Iron Helmet",       "helmet", "R", 0,  40,  70,  "A basic iron helmet for battlefield protection.", 800),
+        ("Cloth Pagdi",       "helmet", "C", 0,  20,  40,  "A simple cloth headwrap.",                        200),
+    ]
+    c.executemany(
+        "INSERT INTO items (name, type, rarity, atk_bonus, def_bonus, hp_bonus, description, cost_hon) VALUES (?,?,?,?,?,?,?,?)",
+        items
+    )
+
+def seed_pets(c):
+    pets = [
+        # War Horses
+        ("Shyamkarna",   "horse",    "L", 80,  60,  300, "Shivaji's legendary black horse, swift as the wind.",   "🐴"),
+        ("Krishnadevi",  "horse",    "E", 55,  40,  200, "A brave war horse of the Maratha cavalry.",             "🐴"),
+        ("Maratha Mare", "horse",    "R", 35,  25,  120, "A reliable cavalry horse.",                             "🐎"),
+        ("Village Horse","horse",    "C", 20,  15,  70,  "A simple but sturdy horse.",                            "🐎"),
+
+        # War Elephants
+        ("Airawat",      "elephant", "L", 100, 90,  500, "A mighty war elephant that charges through enemy lines.","🐘"),
+        ("Gajraj",       "elephant", "E", 70,  65,  350, "A trained war elephant of the Maratha forces.",         "🐘"),
+        ("Fort Tusker",  "elephant", "R", 45,  45,  200, "A strong elephant used to break fort gates.",           "🐘"),
+
+        # Hawks/Eagles
+        ("Neelkantha",   "hawk",     "L", 90,  30,  150, "A sacred blue-throated hawk, messenger of Shiva.",     "🦅"),
+        ("Sahyadri Hawk","hawk",     "E", 60,  20,  100, "A swift hawk that scouts enemy positions.",             "🦅"),
+        ("River Falcon", "hawk",     "R", 40,  15,  70,  "A falcon trained by Konkan scouts.",                   "🦆"),
+
+        # Tigers
+        ("Waghoba",      "tiger",    "L", 130, 50,  250, "The sacred tiger spirit of Maharashtra.",               "🐯"),
+        ("Sahyadri Tiger","tiger",   "E", 90,  35,  180, "A fierce tiger from the Sahyadri ranges.",              "🐯"),
+    ]
+    c.executemany(
+        "INSERT INTO pets (name, type, rarity, atk_bonus, def_bonus, hp_bonus, description, emoji) VALUES (?,?,?,?,?,?,?,?)",
+        pets
+    )
+
+def ensure_user(user_id, username):
+    """Auto-register a player if they don't exist yet. Call at the top of every command."""
+    conn = get_conn()
+    conn.execute(
+        "INSERT OR IGNORE INTO players (user_id, username) VALUES (?, ?)",
+        (str(user_id), username)
+    )
+    conn.commit()
+    conn.close()
