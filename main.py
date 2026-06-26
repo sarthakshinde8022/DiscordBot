@@ -102,8 +102,11 @@ async def main():
     db.init_db()
     async with bot:
         for cog in COGS:
-            await bot.load_extension(cog)
-            print(f"✅ Loaded {cog}")
+            try:
+                await bot.load_extension(cog)
+                print(f"✅ Loaded {cog}")
+            except Exception as e:
+                print(f"❌ Failed to load {cog}: {e}")
         await bot.start(TOKEN)
 
 if __name__ == "__main__":
