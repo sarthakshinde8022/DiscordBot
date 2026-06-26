@@ -4,23 +4,11 @@ from datetime import datetime, timedelta
 import database as db
 import config
 
-def get_player(user_id, username=None):
+def get_player(user_id):
     conn = db.get_conn()
-    c = conn.cursor()
-    c.execute("SELECT * FROM players WHERE user_id = ?", (str(user_id),))
-    player = c.fetchone()
+    player = conn.execute("SELECT * FROM players WHERE user_id = ?", (str(user_id),)).fetchone()
     conn.close()
     return player
-
-def create_player(user_id, username):
-    conn = db.get_conn()
-    c = conn.cursor()
-    c.execute(
-        "INSERT OR IGNORE INTO players (user_id, username) VALUES (?, ?)",
-        (str(user_id), username)
-    )
-    conn.commit()
-    conn.close()
 
 def level_from_xp(xp):
     return max(1, int((xp / 100) ** 0.5) + 1)
@@ -34,9 +22,11 @@ class General(commands.Cog):
     async def start(self, ctx):
         """Begin your Swarajya journey."""
         uid = str(ctx.author.id)
-        player = get_player(uid)
+        already_existed = bool(get_player(uid))
 
-        if player:
+        db.ensure_user(uid, ctx.author.name)
+
+        if already_existed:
             embed = discord.Embed(
                 title="⚔️ Already Enlisted!",
                 description=f"{ctx.author.mention}, you have already joined the Swarajya!\nUse `jay!profile` to view your progress.",
@@ -44,8 +34,6 @@ class General(commands.Cog):
             )
             await ctx.send(embed=embed)
             return
-
-        create_player(uid, ctx.author.name)
 
         embed = discord.Embed(
             title="🚩 **Jay Bhavani! Jay Shivaji!**",
@@ -72,11 +60,12 @@ class General(commands.Cog):
     async def profile(self, ctx, member: discord.Member = None):
         """View your Sardar profile."""
         target = member or ctx.author
+        if not member:
+            db.ensure_user(str(target.id), target.name)
         player = get_player(str(target.id))
 
         if not player:
-            msg = "You haven't started yet! Use `jay!start`." if not member else f"{target.name} hasn't started yet."
-            await ctx.send(f"❌ {msg}")
+            await ctx.send(f"❌ {target.name} hasn't started yet.")
             return
 
         conn = db.get_conn()
@@ -127,10 +116,8 @@ class General(commands.Cog):
     @commands.command(name="bal", aliases=["balance", "zeni"])
     async def bal(self, ctx):
         """Check your currency balance."""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         embed = discord.Embed(title=f"💰 {ctx.author.name}'s Treasury", color=config.COLOR_GOLD)
         embed.add_field(name="🪙 Hon",         value=f"`{player['hon']:,}`",         inline=True)
@@ -144,10 +131,8 @@ class General(commands.Cog):
     @commands.command(name="daily")
     async def daily(self, ctx):
         """Claim your daily Hon reward."""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         now = datetime.utcnow()
         last = player["last_daily"]
@@ -193,10 +178,8 @@ class General(commands.Cog):
     @commands.command(name="roll", aliases=["hourly"])
     async def roll_hourly(self, ctx):
         """Open your hourly chest for Hon."""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         now = datetime.utcnow()
         last = player["last_hourly"]
