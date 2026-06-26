@@ -35,10 +35,8 @@ class Items(commands.Cog):
     @commands.command(name="items", aliases=["item", "inventory_items"])
     async def items_cmd(self, ctx, page: int = 1):
         """View your item inventory. Usage: jay!items"""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         conn = db.get_conn()
         rows = conn.execute(
@@ -193,10 +191,8 @@ class Items(commands.Cog):
     @commands.command(name="shop")
     async def shop(self, ctx, page: str = "1"):
         """Browse the shop. Usage: jay!shop or jay!shop 2 (eggs)"""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         if page == "2":
             # Egg shop
@@ -244,10 +240,8 @@ class Items(commands.Cog):
         if not item_id:
             await ctx.send("❌ Usage: `jay!buyitem <item ID>` — check `jay!shop`")
             return
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         conn = db.get_conn()
         item = conn.execute("SELECT * FROM items WHERE id=?", (item_id,)).fetchone()
@@ -283,10 +277,8 @@ class Items(commands.Cog):
         if not egg_type or egg_type not in EGG_TYPES:
             await ctx.send("❌ Usage: `jay!buyegg small` / `jay!buyegg medium` / `jay!buyegg large`")
             return
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         egg = EGG_TYPES[egg_type]
         if player["hon"] < egg["cost"]:
@@ -327,10 +319,8 @@ class Items(commands.Cog):
     @commands.command(name="eggs", aliases=["egg"])
     async def eggs(self, ctx):
         """View your eggs and hatch ready ones. Usage: jay!eggs"""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         conn = db.get_conn()
         eggs = conn.execute(
@@ -372,10 +362,8 @@ class Items(commands.Cog):
     async def hatch(self, ctx):
         """Hatch a ready egg! Usage: jay!hatch"""
         import asyncio
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         conn = db.get_conn()
         now = datetime.utcnow()
@@ -476,10 +464,8 @@ class Items(commands.Cog):
     @commands.command(name="pets", aliases=["waranimals"])
     async def pets(self, ctx):
         """View your War Animals. Usage: jay!pets"""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
 
         conn = db.get_conn()
         rows = conn.execute(
