@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.ext import tasks
 import os
 from dotenv import load_dotenv
 import database as db
@@ -18,7 +19,14 @@ COGS = ["cogs.general", "cogs.characters", "cogs.battle", "cogs.saga", "cogs.tow
 @bot.event
 async def on_ready():
     print(f"✅ {bot.user} is online!")
-    await bot.change_presence(activity=discord.Game(name="jay!start | Swarajya Bot"))
+    @tasks.loop(minutes=5)
+async def update_presence():
+    conn = db.get_conn()
+    count = conn.execute("SELECT COUNT(*) FROM players").fetchone()[0]
+    conn.close()
+    await bot.change_presence(
+        activity=discord.Game(name=f"jay!help | {count} Sardars")
+    )
 
 @bot.command(name="help")
 async def help_cmd(ctx, section: str = None):
