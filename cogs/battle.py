@@ -88,11 +88,9 @@ class Battle(commands.Cog):
             await ctx.send("❌ Invalid opponent!")
             return
 
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         p1 = get_player(str(ctx.author.id))
         p2 = get_player(str(opponent.id))
-        if not p1:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
         if not p2:
             await ctx.send(f"❌ {opponent.name} hasn't started yet!")
             return
@@ -187,10 +185,8 @@ class Battle(commands.Cog):
     @commands.command(name="boss")
     async def boss(self, ctx, *, boss_name: str = None):
         """Fight a boss (requires Boss Key). Usage: jay!boss or jay!boss Afzal Khan"""
+        db.ensure_user(str(ctx.author.id), ctx.author.name)
         player = get_player(str(ctx.author.id))
-        if not player:
-            await ctx.send("❌ Use `jay!start` first!")
-            return
         if (player["boss_keys"] or 0) < 1:
             await ctx.send(
                 "You don't have a Boss Key! Earn keys by completing jay!tc 3 or jay!tc 4. "
@@ -313,6 +309,8 @@ class Battle(commands.Cog):
     async def stats(self, ctx, member: discord.Member = None):
         """View battle stats. Usage: jay!stats"""
         target = member or ctx.author
+        if not member:
+            db.ensure_user(str(target.id), target.name)
         player = get_player(str(target.id))
         if not player:
             await ctx.send("❌ Player hasn't started yet!")
