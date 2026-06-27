@@ -285,9 +285,62 @@ def seed_characters(c):
     )
 
 def migrate_db():
-    """Add new tables for Phase 3b — Items, Equipment, Pets."""
+    """Add new tables for Phase 3b + Phase 4."""
     conn = get_conn()
     c = conn.cursor()
+
+    # Phase 4 — Clans
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS clans (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT UNIQUE NOT NULL,
+            tag         TEXT UNIQUE NOT NULL,
+            description TEXT DEFAULT '',
+            leader_id   TEXT NOT NULL,
+            level       INTEGER DEFAULT 1,
+            xp          INTEGER DEFAULT 0,
+            hon_bank    INTEGER DEFAULT 0,
+            wins        INTEGER DEFAULT 0,
+            losses      INTEGER DEFAULT 0,
+            created_at  TEXT DEFAULT (datetime('now'))
+        )
+    """)
+    try:
+        c.execute("ALTER TABLE players ADD COLUMN clan_id INTEGER DEFAULT NULL")
+    except: pass
+    try:
+        c.execute("ALTER TABLE players ADD COLUMN clan_role TEXT DEFAULT NULL")
+    except: pass
+
+    # Phase 4 — Market listings
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS market (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            seller_id   TEXT NOT NULL,
+            item_type   TEXT NOT NULL,
+            item_ref_id INTEGER NOT NULL,
+            price_hon   INTEGER NOT NULL,
+            listed_at   TEXT DEFAULT (datetime('now')),
+            sold        INTEGER DEFAULT 0
+        )
+    """)
+
+    # Phase 4 — Trade offers
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS trades (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id       TEXT NOT NULL,
+            receiver_id     TEXT NOT NULL,
+            sender_item_type   TEXT,
+            sender_item_ref    INTEGER,
+            sender_hon         INTEGER DEFAULT 0,
+            receiver_item_type TEXT,
+            receiver_item_ref  INTEGER,
+            receiver_hon       INTEGER DEFAULT 0,
+            status          TEXT DEFAULT 'pending',
+            created_at      TEXT DEFAULT (datetime('now'))
+        )
+    """)
 
     # Items master table
     c.execute("""
