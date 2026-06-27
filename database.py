@@ -7,6 +7,16 @@ def get_conn():
     conn.row_factory = sqlite3.Row
     return conn
 
+def ensure_user(user_id, username=None):
+    """Create player if not exists."""
+    conn = get_conn()
+    conn.execute(
+        "INSERT OR IGNORE INTO players (user_id, username) VALUES (?, ?)",
+        (str(user_id), username or str(user_id))
+    )
+    conn.commit()
+    conn.close()
+
 def init_db():
     conn = get_conn()
     c = conn.cursor()
