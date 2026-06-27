@@ -106,7 +106,10 @@ async def on_command_error(ctx, error):
     elif isinstance(error, commands.BadArgument):
         await ctx.send(f"❌ Invalid argument. Use `jay!help` for usage.")
     else:
-        print(f"Error: {error}")
+        await ctx.send(f"❌ Error: {str(error)}")
+        print(f"Error in {ctx.command}: {error}")
+        import traceback
+        traceback.print_exc()
 
 async def main():
     db.init_db()
