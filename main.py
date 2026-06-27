@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from discord.ext import tasks
 import os
 from dotenv import load_dotenv
 import database as db
@@ -14,21 +13,12 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix="jay!", intents=intents, help_command=None)
 
-COGS = ["cogs.general", "cogs.characters", "cogs.battle", "cogs.saga", "cogs.tower", "cogs.items"]
-
-@tasks.loop(minutes=5)
-async def update_presence():
-    conn = db.get_conn()
-    count = conn.execute("SELECT COUNT(*) FROM players").fetchone()[0]
-    conn.close()
-    await bot.change_presence(
-        activity=discord.Game(name=f"jay!help | {count} Sardars")
-    )
+COGS = ["cogs.general", "cogs.characters", "cogs.battle", "cogs.saga", "cogs.tower", "cogs.items", "cogs.clans", "cogs.market"]
 
 @bot.event
 async def on_ready():
     print(f"✅ {bot.user} is online!")
-    update_presence.start()  # start the loop here
+    await bot.change_presence(activity=discord.Game(name="!start | Swarajya Bot"))
 
 @bot.command(name="help")
 async def help_cmd(ctx, section: str = None):
@@ -106,20 +96,14 @@ async def on_command_error(ctx, error):
     elif isinstance(error, commands.BadArgument):
         await ctx.send(f"❌ Invalid argument. Use `jay!help` for usage.")
     else:
-        await ctx.send(f"❌ Error: {str(error)}")
-        print(f"Error in {ctx.command}: {error}")
-        import traceback
-        traceback.print_exc()
+        print(f"Error: {error}")
 
 async def main():
     db.init_db()
     async with bot:
         for cog in COGS:
-            try:
-                await bot.load_extension(cog)
-                print(f"✅ Loaded {cog}")
-            except Exception as e:
-                print(f"❌ Failed to load {cog}: {e}")
+            await bot.load_extension(cog)
+            print(f"✅ Loaded {cog}")
         await bot.start(TOKEN)
 
 if __name__ == "__main__":
