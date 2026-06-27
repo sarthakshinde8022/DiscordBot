@@ -155,6 +155,7 @@ def init_db():
     conn.commit()
     conn.close()
     print("✅ Database initialized.")
+    migrate_db()
 
 def seed_bosses(c):
     bosses = [
@@ -418,13 +419,3 @@ def seed_pets(c):
         "INSERT INTO pets (name, type, rarity, atk_bonus, def_bonus, hp_bonus, description, emoji) VALUES (?,?,?,?,?,?,?,?)",
         pets
     )
-
-def ensure_user(user_id, username):
-    """Auto-register a player if they don't exist yet. Call at the top of every command."""
-    conn = get_conn()
-    conn.execute(
-        "INSERT OR IGNORE INTO players (user_id, username) VALUES (?, ?)",
-        (str(user_id), username)
-    )
-    conn.commit()
-    conn.close()
